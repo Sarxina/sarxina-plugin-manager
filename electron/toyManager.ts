@@ -1,6 +1,7 @@
 import { exec } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { getToysDir, loadConfig, saveConfig } from "./configStore.js";
 
 // Electron's Node version for native module compilation
@@ -111,8 +112,9 @@ export async function startToy(packageName: string, ctx: unknown): Promise<void>
     const entryFile = toyPkg.main ?? "dist/index.js";
     const entryPath = path.join(toyDir, entryFile);
 
-    // Dynamic import of the toy's main entry point
-    const toyModule = (await import(entryPath)) as ToyModule;
+    // Dynamic import of the toy's main entry point.
+    // ESM loader requires file:// URLs, not raw drive-letter paths on Windows.
+    const toyModule = (await import(pathToFileURL(entryPath).href)) as ToyModule;
 
     if (typeof toyModule.startToy !== "function") {
         throw new Error(`${packageName} does not export a startToy function`);
