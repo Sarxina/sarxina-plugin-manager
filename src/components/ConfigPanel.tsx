@@ -76,6 +76,7 @@ export function ConfigPanel() {
                 <h3>Twitch</h3>
                 {twitchUser ? (
                     <div className="twitch-connected">
+                        <span className="twitch-check" aria-label="Connected">✓</span>
                         <span className="twitch-status">Logged in as <strong>{twitchUser}</strong></span>
                         <button onClick={handleTwitchAuth} className="secondary" disabled={authingTwitch}>
                             {authingTwitch ? "Authorizing..." : "Re-authorize"}
