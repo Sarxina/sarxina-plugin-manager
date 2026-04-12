@@ -141,7 +141,9 @@ ipcMain.handle("connect", async () => {
         await connectVts(config);
         return { success: true };
     } catch (err) {
-        return { success: false, error: err instanceof Error ? err.message : String(err) };
+        const message = err instanceof Error ? err.message : String(err);
+        const hint = "Check that VTube Studio is running with the API enabled (General Settings → scroll down → VTube Studio Plugins) and that the API port matches.";
+        return { success: false, error: `${message}\n\n${hint}` };
     }
 });
 
