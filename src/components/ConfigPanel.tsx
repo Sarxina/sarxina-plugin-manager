@@ -56,7 +56,7 @@ export function ConfigPanel() {
     };
 
     const handleConnect = async () => {
-        setStatus("Connecting to VTube Studio + Twitch...");
+        setStatus("Connecting to VTube Studio...");
         await saveConfig(config);
         const result = await connect();
         if (result.success) {
