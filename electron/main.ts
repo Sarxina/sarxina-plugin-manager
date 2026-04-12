@@ -56,7 +56,7 @@ function createWindow(): void {
 
 // --- Shared context management ---
 
-async function createSharedConnections(config: AppConfig): Promise<void> {
+async function connectVts(config: AppConfig): Promise<void> {
     const tools = await import("@sarxina/sarxina-tools");
 
     // Load plugin icon for VTS auth prompt (128x128 PNG, base64-encoded)
@@ -74,25 +74,27 @@ async function createSharedConnections(config: AppConfig): Promise<void> {
         pluginDeveloper: "Sarxina",
         pluginIcon,
     });
-
-    if (config.twitchClientId && config.twitchAccessToken && config.twitchChannelName) {
-        process.env["TWITCH_CLIENT_ID"] = config.twitchClientId;
-        process.env["TWITCH_ACCESS_TOKEN"] = config.twitchAccessToken;
-        process.env["TWITCH_CHANNEL_NAME"] = config.twitchChannelName;
-        process.env["TWITCH_REFRESH_TOKEN"] = config.twitchRefreshToken;
-        process.env["TWITCH_BROADCASTER_ID"] = config.twitchBroadcasterId;
-        sharedChat = new tools.TwitchChatManager();
-    }
 }
 
-/**
- * Build the context object to pass to a toy's startToy(). Includes the
- * forehead pin if one is saved in config.
- */
-function buildToyContext(): unknown {
+async function ensureChatManager(config: AppConfig): Promise<unknown> {
+    if (sharedChat) return sharedChat;
+    if (!config.twitchClientId || !config.twitchAccessToken || !config.twitchChannelName) {
+        return null;
+    }
+    process.env["TWITCH_CLIENT_ID"] = config.twitchClientId;
+    process.env["TWITCH_ACCESS_TOKEN"] = config.twitchAccessToken;
+    process.env["TWITCH_CHANNEL_NAME"] = config.twitchChannelName;
+    process.env["TWITCH_REFRESH_TOKEN"] = config.twitchRefreshToken;
+    process.env["TWITCH_BROADCASTER_ID"] = config.twitchBroadcasterId;
+    const tools = await import("@sarxina/sarxina-tools");
+    sharedChat = new tools.TwitchChatManager();
+    return sharedChat;
+}
+
+async function buildToyContext(): Promise<unknown> {
     const config = loadConfig();
     return {
-        chat: sharedChat,
+        chat: await ensureChatManager(config),
         vts: sharedVts,
         foreheadPin: config.foreheadPin ?? undefined,
         debug: config.debugOutput,
@@ -136,7 +138,7 @@ ipcMain.handle("save-config", (_event, config: AppConfig) => {
 ipcMain.handle("connect", async () => {
     try {
         const config = loadConfig();
-        await createSharedConnections(config);
+        await connectVts(config);
         return { success: true };
     } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
@@ -209,7 +211,7 @@ ipcMain.handle("start-toy", async (_event, packageName: string) => {
         if (!sharedVts) {
             return { success: false, error: "Not connected to VTube Studio." };
         }
-        await startToy(packageName, buildToyContext());
+        await startToy(packageName, await buildToyContext());
         return { success: true };
     } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
