@@ -104,9 +104,10 @@ jobs:
         with:
           name: release-${{ matrix.os }}
           path: |
-            release/**/*.dmg
-            release/**/*.exe
+            release/**/*Installer*.dmg
+            release/**/*Setup*.exe
             release/**/*.AppImage
+            !release/**/elevate.exe
 
   release:
     needs: build
