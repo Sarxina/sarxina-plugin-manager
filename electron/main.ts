@@ -57,13 +57,6 @@ function createWindow(): void {
 // --- Shared context management ---
 
 async function createSharedConnections(config: AppConfig): Promise<void> {
-    // Set env vars that TwitchChatManager reads
-    process.env["TWITCH_CLIENT_ID"] = config.twitchClientId;
-    process.env["TWITCH_ACCESS_TOKEN"] = config.twitchAccessToken;
-    process.env["TWITCH_CHANNEL_NAME"] = config.twitchChannelName;
-    process.env["TWITCH_REFRESH_TOKEN"] = config.twitchRefreshToken;
-    process.env["TWITCH_BROADCASTER_ID"] = config.twitchBroadcasterId;
-
     const tools = await import("@sarxina/sarxina-tools");
 
     // Load plugin icon for VTS auth prompt (128x128 PNG, base64-encoded)
@@ -75,13 +68,21 @@ async function createSharedConnections(config: AppConfig): Promise<void> {
         // Icon not found — auth will work without it, just no icon shown
     }
 
-    sharedChat = new tools.TwitchChatManager();
     sharedVts = await tools.VTSClient.connect({
         url: config.vtsUrl || "ws://localhost:8001",
         pluginName: "SarxinaPluginManager",
         pluginDeveloper: "Sarxina",
         pluginIcon,
     });
+
+    if (config.twitchClientId && config.twitchAccessToken && config.twitchChannelName) {
+        process.env["TWITCH_CLIENT_ID"] = config.twitchClientId;
+        process.env["TWITCH_ACCESS_TOKEN"] = config.twitchAccessToken;
+        process.env["TWITCH_CHANNEL_NAME"] = config.twitchChannelName;
+        process.env["TWITCH_REFRESH_TOKEN"] = config.twitchRefreshToken;
+        process.env["TWITCH_BROADCASTER_ID"] = config.twitchBroadcasterId;
+        sharedChat = new tools.TwitchChatManager();
+    }
 }
 
 /**
@@ -135,9 +136,6 @@ ipcMain.handle("save-config", (_event, config: AppConfig) => {
 ipcMain.handle("connect", async () => {
     try {
         const config = loadConfig();
-        if (!config.twitchClientId || !config.twitchAccessToken || !config.twitchChannelName) {
-            return { success: false, error: "Twitch credentials not configured" };
-        }
         await createSharedConnections(config);
         return { success: true };
     } catch (err) {
@@ -208,8 +206,8 @@ ipcMain.handle("uninstall-toy", async (_event, packageName: string) => {
 
 ipcMain.handle("start-toy", async (_event, packageName: string) => {
     try {
-        if (!sharedVts || !sharedChat) {
-            return { success: false, error: "Not connected. Configure and connect first." };
+        if (!sharedVts) {
+            return { success: false, error: "Not connected to VTube Studio." };
         }
         await startToy(packageName, buildToyContext());
         return { success: true };
