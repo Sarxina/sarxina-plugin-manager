@@ -5,7 +5,7 @@
 <h1 align="center">Sarxina Plugin Manager</h1>
 
 <p align="center">
-  A desktop app for managing VTube Studio plugins. Install, configure, and toggle plugins with one click.
+  A desktop app for managing <a href="https://github.com/Sarxina/Random-VTuber-Toys">Sarxina's VTube Studio plugins</a>.
 </p>
 
 <p align="center">
@@ -17,11 +17,9 @@
 
 ## What It Does
 
-- **Install plugins** from a curated list — no manual setup, no terminal
-- **Toggle plugins on and off** with a switch
-- **Connect to Twitch** with one click (OAuth — no copying tokens)
-- **Connect to VTube Studio** automatically
-- **Set your forehead position** for plugins that pin things to your head — click once, saved forever
+- Install Sarxina VTube Studio plugins with one click
+- Toggle plugins on and off, configure their options
+- Coming soon: quickly change how plugins are triggered — chat or redemption
 
 ## Available Plugins
 
@@ -37,8 +35,8 @@ More coming soon.
 
 1. **Download** the latest release for your platform from the [releases page](https://github.com/Sarxina/sarxina-plugin-manager/releases/latest)
 2. **Run the installer** (`.dmg` for Mac, `Setup.exe` for Windows)
-3. **Connect to Twitch** — click "Connect with Twitch" in Settings
-4. **Connect to VTube Studio** — make sure VTS is running with the API enabled, then click "Connect to VTube Studio"
+3. **Connect to Twitch** in Settings
+4. **Connect to VTube Studio** — make sure VTS is running with the API enabled
 5. **Install a plugin** and toggle it on
 
 ## Requirements
