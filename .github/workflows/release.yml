@@ -73,7 +73,7 @@ jobs:
           fi
 
       - name: Bump version (only on first matrix runner)
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-latest' && !contains(github.event.head_commit.message, '[skip ci]')
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -83,6 +83,7 @@ jobs:
           git add package.json package-lock.json
           git commit -m "chore: release v${NEW_VERSION} [skip ci]"
           git tag "v${NEW_VERSION}"
+          git pull --rebase origin main || true
           git push
           git push --tags
 

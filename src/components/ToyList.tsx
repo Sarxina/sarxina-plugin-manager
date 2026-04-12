@@ -17,7 +17,7 @@ export function ToyList() {
     const [loading, setLoading] = useState<string | null>(null);
     const [error, setError] = useState("");
     const [pinPrompt, setPinPrompt] = useState(false);
-    const [pendingStart, setPendingStart] = useState<string | null>(null);
+    const [_pendingStart, setPendingStart] = useState<string | null>(null);
     const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
 
     const refresh = useCallback(async () => {

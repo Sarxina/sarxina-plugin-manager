@@ -31,7 +31,8 @@ let win: BrowserWindow | null;
 
 // Shared connections — created when user clicks Connect
 let sharedChat: unknown = null;
-let sharedVts: { requestUserClick: () => Promise<ClickPinData>; disconnect: () => void } & Record<string, unknown> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let sharedVts: any = null;
 
 function createWindow(): void {
     win = new BrowserWindow({
@@ -80,7 +81,7 @@ async function createSharedConnections(config: AppConfig): Promise<void> {
         pluginName: "SarxinaPluginManager",
         pluginDeveloper: "Sarxina",
         pluginIcon,
-    }) as typeof sharedVts;
+    });
 }
 
 /**
