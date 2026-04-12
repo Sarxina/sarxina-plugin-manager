@@ -107,6 +107,7 @@ jobs:
             release/**/*.dmg
             release/**/*.exe
             release/**/*.AppImage
+            !release/**/win-unpacked/**
             !release/**/elevate.exe
             !release/**/UnInstall*.exe
 
