@@ -153,6 +153,20 @@
     font-size: 0.9rem;
 }
 
+.twitch-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    background: #3ecf5a;
+    color: #0b1220;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
 .config-hint {
     font-size: 0.85rem;
     color: var(--color-peach);
