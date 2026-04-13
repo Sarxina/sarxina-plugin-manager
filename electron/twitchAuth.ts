@@ -1,6 +1,5 @@
 import { shell } from "electron";
 import http from "node:http";
-import crypto from "node:crypto";
 
 const TWITCH_CLIENT_ID = "7pt77gkod0z7lv6npo45d6njqnrtz7";
 const REDIRECT_PORT = 8921;
@@ -20,76 +19,61 @@ interface TwitchTokens {
 }
 
 /**
- * Runs the full Twitch OAuth2 PKCE flow:
- * 1. Opens the user's browser to Twitch login
- * 2. Catches the redirect on a local server
- * 3. Exchanges the code for tokens
- * 4. Returns the tokens
+ * Runs the Twitch OAuth2 Implicit Grant flow (public client, no secret).
+ * Twitch returns the access token in the URL fragment, so the callback page
+ * uses JS to forward the fragment to /token-capture as a query string.
+ * Implicit Grant does not issue refresh tokens.
  */
 export async function authenticateWithTwitch(): Promise<TwitchTokens> {
-    // Generate PKCE challenge
-    const codeVerifier = crypto.randomBytes(32).toString("base64url");
-    const codeChallenge = crypto
-        .createHash("sha256")
-        .update(codeVerifier)
-        .digest("base64url");
-
-    // Build auth URL
     const authUrl = new URL("https://id.twitch.tv/oauth2/authorize");
     authUrl.searchParams.set("client_id", TWITCH_CLIENT_ID);
     authUrl.searchParams.set("redirect_uri", REDIRECT_URI);
-    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set("response_type", "token");
     authUrl.searchParams.set("scope", SCOPES);
-    authUrl.searchParams.set("code_challenge", codeChallenge);
-    authUrl.searchParams.set("code_challenge_method", "S256");
     authUrl.searchParams.set("force_verify", "true");
 
-    // Start listening for the redirect, then open the browser
-    const codePromise = waitForAuthCode();
+    const tokenPromise = waitForAccessToken();
     shell.openExternal(authUrl.toString());
-    const authCode = await codePromise;
-
-    // Exchange code for tokens
-    const tokenResp = await fetch("https://id.twitch.tv/oauth2/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-            client_id: TWITCH_CLIENT_ID,
-            code: authCode,
-            grant_type: "authorization_code",
-            redirect_uri: REDIRECT_URI,
-            code_verifier: codeVerifier,
-        }),
-    });
-
-    if (!tokenResp.ok) {
-        const errText = await tokenResp.text();
-        throw new Error(`Token exchange failed: ${errText}`);
-    }
-
-    const tokenData = (await tokenResp.json()) as {
-        access_token: string;
-        refresh_token: string;
-    };
+    const accessToken = await tokenPromise;
 
     return {
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token,
+        accessToken,
+        refreshToken: "",
         clientId: TWITCH_CLIENT_ID,
     };
 }
 
 /**
- * Spins up a temporary local HTTP server that waits for Twitch's redirect,
- * extracts the auth code, and shuts down.
+ * Spins up a temporary local HTTP server.
+ *   /callback       — serves JS that copies the URL fragment to /token-capture
+ *   /token-capture  — receives the forwarded access_token as a query string
  */
-function waitForAuthCode(): Promise<string> {
+function waitForAccessToken(): Promise<string> {
     return new Promise((resolve, reject) => {
         const server = http.createServer((req, res) => {
             const url = new URL(req.url ?? "", `http://localhost:${REDIRECT_PORT}`);
 
             if (url.pathname === "/callback") {
-                const code = url.searchParams.get("code");
+                // Fragment isn't sent to server; forward it via JS redirect.
+                res.writeHead(200, { "Content-Type": "text/html" });
+                res.end(`<html><body>
+<script>
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const token = params.get("access_token");
+  const error = params.get("error");
+  if (token) {
+    window.location.replace("/token-capture?access_token=" + encodeURIComponent(token));
+  } else {
+    window.location.replace("/token-capture?error=" + encodeURIComponent(error || "no_token"));
+  }
+</script>
+<p>Finishing Twitch login...</p>
+</body></html>`);
+                return;
+            }
+
+            if (url.pathname === "/token-capture") {
+                const token = url.searchParams.get("access_token");
                 const error = url.searchParams.get("error");
 
                 if (error) {
@@ -100,11 +84,11 @@ function waitForAuthCode(): Promise<string> {
                     return;
                 }
 
-                if (code) {
+                if (token) {
                     res.writeHead(200, { "Content-Type": "text/html" });
                     res.end("<html><body><h2>Connected to Twitch!</h2><p>You can close this tab and return to Sarxina Plugin Manager.</p></body></html>");
                     server.close();
-                    resolve(code);
+                    resolve(token);
                     return;
                 }
             }
