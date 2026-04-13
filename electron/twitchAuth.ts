@@ -2,7 +2,7 @@ import { shell } from "electron";
 import http from "node:http";
 import crypto from "node:crypto";
 
-const TWITCH_CLIENT_ID = "ca28wij67yu3awdfub9c7xj5deh8xw";
+const TWITCH_CLIENT_ID = "7pt77gkod0z7lv6npo45d6njqnrtz7";
 const REDIRECT_PORT = 8921;
 const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}/callback`;
 
