@@ -18,6 +18,7 @@ export interface AppConfig {
     activeToys: string[];
     foreheadPin: unknown;
     faceMesh: { pin: string; hide: string[] } | null;
+    modelDirectory: string | null;
     debugOutput: boolean;
 }
 
@@ -94,4 +95,20 @@ export async function requestFaceMesh(): Promise<IpcResult & { count?: number }>
 
 export async function clearFaceMesh(): Promise<IpcResult> {
     return (await ipc.invoke("clear-face-mesh")) as IpcResult;
+}
+
+export async function getModelDirectory(): Promise<string | null> {
+    return (await ipc.invoke("get-model-directory")) as string | null;
+}
+
+export async function detectModelDirectory(): Promise<IpcResult & { path?: string }> {
+    return (await ipc.invoke("detect-model-directory")) as IpcResult & { path?: string };
+}
+
+export async function browseModelDirectory(): Promise<IpcResult & { path?: string }> {
+    return (await ipc.invoke("browse-model-directory")) as IpcResult & { path?: string };
+}
+
+export async function clearModelDirectory(): Promise<IpcResult> {
+    return (await ipc.invoke("clear-model-directory")) as IpcResult;
 }

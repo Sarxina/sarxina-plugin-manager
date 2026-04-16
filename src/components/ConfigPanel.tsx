@@ -9,6 +9,10 @@ import {
     hasFaceMesh,
     requestFaceMesh,
     clearFaceMesh,
+    getModelDirectory,
+    detectModelDirectory,
+    browseModelDirectory,
+    clearModelDirectory,
     type AppConfig,
 } from "../hooks/useIpc";
 
@@ -21,6 +25,8 @@ export function ConfigPanel() {
     const [requestingFace, setRequestingFace] = useState(false);
     const [twitchUser, setTwitchUser] = useState<string | null>(null);
     const [authingTwitch, setAuthingTwitch] = useState(false);
+    const [modelDir, setModelDir] = useState<string | null>(null);
+    const [detectingModel, setDetectingModel] = useState(false);
 
     useEffect(() => {
         getConfig().then((c) => {
@@ -29,6 +35,7 @@ export function ConfigPanel() {
         });
         hasForeheadPin().then(setHasPin);
         hasFaceMesh().then(setHasFace);
+        getModelDirectory().then(setModelDir);
     }, []);
 
     if (!config) return <div className="panel">Loading...</div>;
@@ -159,6 +166,60 @@ export function ConfigPanel() {
                                 await clearFaceMesh();
                                 setHasFace(false);
                                 setStatus("Face meshes cleared");
+                                setTimeout(() => setStatus(""), 3000);
+                            }}
+                            className="secondary"
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
+
+                <p className="config-hint" style={{ marginTop: "1rem" }}>
+                    {modelDir
+                        ? `Model directory: ${modelDir}`
+                        : "Model directory not set — required by Mesh Market. Detect it from your VTS install or browse to it manually."}
+                </p>
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <button
+                        onClick={async () => {
+                            setDetectingModel(true);
+                            setStatus("Detecting model directory from VTube Studio...");
+                            const result = await detectModelDirectory();
+                            setDetectingModel(false);
+                            if (result.success && result.path) {
+                                setModelDir(result.path);
+                                setStatus(`Detected: ${result.path}`);
+                            } else {
+                                setStatus(result.error ?? "Detection failed.");
+                            }
+                            setTimeout(() => setStatus(""), 5000);
+                        }}
+                        disabled={detectingModel}
+                    >
+                        {detectingModel ? "Detecting..." : modelDir ? "Re-detect" : "Detect Model Directory"}
+                    </button>
+                    <button
+                        onClick={async () => {
+                            const result = await browseModelDirectory();
+                            if (result.success && result.path) {
+                                setModelDir(result.path);
+                                setStatus(`Set: ${result.path}`);
+                            } else if (result.error && result.error !== "Cancelled.") {
+                                setStatus(result.error);
+                            }
+                            setTimeout(() => setStatus(""), 5000);
+                        }}
+                        className="secondary"
+                    >
+                        Browse...
+                    </button>
+                    {modelDir && (
+                        <button
+                            onClick={async () => {
+                                await clearModelDirectory();
+                                setModelDir(null);
+                                setStatus("Model directory cleared");
                                 setTimeout(() => setStatus(""), 3000);
                             }}
                             className="secondary"

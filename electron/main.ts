@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -14,6 +14,9 @@ import {
     stopAllToys,
 } from "./toyManager.js";
 import { authenticateWithTwitch, getTwitchUser } from "./twitchAuth.js";
+import { detectModelDirectory, isValidModelDirectory } from "./modelDetector.js";
+
+const MESHMARKET_PACKAGE = "@sarxina/meshmarket";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -74,6 +77,34 @@ async function connectVts(config: AppConfig): Promise<void> {
         pluginDeveloper: "Sarxina",
         pluginIcon,
     });
+
+    // Best-effort model directory detection. Doesn't fail the connect on error.
+    try {
+        await refreshModelDirectory();
+    } catch (err) {
+        console.warn("Model directory detection failed:", err);
+    }
+}
+
+/**
+ * Ask VTS for the active model and try to locate its directory on disk.
+ * Saves the result to config (or clears it if no match). Returns the path,
+ * or null if nothing was detected.
+ */
+async function refreshModelDirectory(): Promise<string | null> {
+    if (!sharedVts) return null;
+    const resp = await sharedVts.sendRequest("CurrentModelRequest");
+    const data = resp.data as { modelLoaded?: boolean; live2DModelName?: string };
+    if (!data.modelLoaded || !data.live2DModelName) return null;
+    const detected = detectModelDirectory(data.live2DModelName);
+    if (detected) {
+        const config = loadConfig();
+        if (config.modelDirectory !== detected) {
+            config.modelDirectory = detected;
+            saveConfig(config);
+        }
+    }
+    return detected;
 }
 
 async function ensureChatManager(config: AppConfig): Promise<unknown> {
@@ -98,6 +129,7 @@ async function buildToyContext(): Promise<unknown> {
         vts: sharedVts,
         foreheadPin: config.foreheadPin ?? undefined,
         faceMesh: config.faceMesh ?? undefined,
+        modelDirectory: config.modelDirectory ?? undefined,
         dataDir: app.getPath("userData"),
         broadcasterLogin: config.twitchChannelName,
         debug: config.debugOutput,
@@ -218,6 +250,58 @@ ipcMain.handle("clear-face-mesh", () => {
     return { success: true };
 });
 
+// Model directory
+ipcMain.handle("get-model-directory", () => {
+    return loadConfig().modelDirectory;
+});
+
+ipcMain.handle("detect-model-directory", async () => {
+    if (!sharedVts) {
+        return { success: false, error: "Not connected to VTube Studio." };
+    }
+    try {
+        const detected = await refreshModelDirectory();
+        if (!detected) {
+            return {
+                success: false,
+                error: "Could not auto-locate your model. Use Browse to point at it manually.",
+            };
+        }
+        return { success: true, path: detected };
+    } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+});
+
+ipcMain.handle("browse-model-directory", async () => {
+    const result = await dialog.showOpenDialog({
+        title: "Select your Live2D model directory",
+        properties: ["openDirectory"],
+        message: "Pick the folder that contains your model's .model3.json file.",
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+        return { success: false, error: "Cancelled." };
+    }
+    const chosen = result.filePaths[0]!;
+    if (!isValidModelDirectory(chosen)) {
+        return {
+            success: false,
+            error: "That folder doesn't contain a .model3.json file. Pick the model's own folder.",
+        };
+    }
+    const config = loadConfig();
+    config.modelDirectory = chosen;
+    saveConfig(config);
+    return { success: true, path: chosen };
+});
+
+ipcMain.handle("clear-model-directory", () => {
+    const config = loadConfig();
+    config.modelDirectory = null;
+    saveConfig(config);
+    return { success: true };
+});
+
 // Toys
 ipcMain.handle("get-available-toys", () => {
     return getAvailableToys();
@@ -255,6 +339,12 @@ ipcMain.handle("start-toy", async (_event, packageName: string) => {
     try {
         if (!sharedVts) {
             return { success: false, error: "Not connected to VTube Studio." };
+        }
+        if (packageName === MESHMARKET_PACKAGE && !loadConfig().modelDirectory) {
+            return {
+                success: false,
+                error: "Mesh Market needs your Live2D model directory. Open Settings → Model → Detect (or Browse) before starting.",
+            };
         }
         await startToy(packageName, await buildToyContext());
         return { success: true };
