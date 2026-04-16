@@ -33,6 +33,9 @@ export interface AppConfig {
     activeToys: string[];
     foreheadPin: ClickPinData | null;
     faceMesh: FaceMeshData | null;
+    /** Absolute path to the active Live2D model's directory (containing the
+     *  .model3.json). Used by toys that need to parse the .moc3 hierarchy. */
+    modelDirectory: string | null;
     debugOutput: boolean;
 }
 
@@ -47,6 +50,7 @@ const DEFAULT_CONFIG: AppConfig = {
     activeToys: [],
     foreheadPin: null,
     faceMesh: null,
+    modelDirectory: null,
     debugOutput: false,
 };
 
