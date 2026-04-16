@@ -12,9 +12,12 @@ import {
     stopToy,
     isToyRunning,
     stopAllToys,
+    getToyControlSchema,
+    notifyToyConfigChange,
 } from "./toyManager.js";
 import { authenticateWithTwitch, getTwitchUser } from "./twitchAuth.js";
 import { detectModelDirectory, isValidModelDirectory } from "./modelDetector.js";
+import { resolveToyConfig, type ToyControlSchema } from "./toyControls.js";
 
 const MESHMARKET_PACKAGE = "@sarxina/meshmarket";
 
@@ -122,8 +125,9 @@ async function ensureChatManager(config: AppConfig): Promise<unknown> {
     return sharedChat;
 }
 
-async function buildToyContext(): Promise<unknown> {
+async function buildToyContext(packageName?: string): Promise<unknown> {
     const config = loadConfig();
+    const toyConfig = packageName ? (config.toyConfigs[packageName] ?? {}) : {};
     return {
         chat: await ensureChatManager(config),
         vts: sharedVts,
@@ -133,6 +137,7 @@ async function buildToyContext(): Promise<unknown> {
         dataDir: app.getPath("userData"),
         broadcasterLogin: config.twitchChannelName,
         debug: config.debugOutput,
+        config: toyConfig,
     };
 }
 
@@ -346,7 +351,7 @@ ipcMain.handle("start-toy", async (_event, packageName: string) => {
                 error: "Mesh Market needs your Live2D model directory. Open Settings → Model → Detect (or Browse) before starting.",
             };
         }
-        await startToy(packageName, await buildToyContext());
+        await startToy(packageName, await buildToyContext(packageName));
         return { success: true };
     } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
@@ -361,6 +366,37 @@ ipcMain.handle("stop-toy", async (_event, packageName: string) => {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
 });
+
+// Toy controls
+ipcMain.handle("get-toy-schema", async (_event, packageName: string) => {
+    try {
+        const schema = await getToyControlSchema(packageName, await buildToyContext(packageName));
+        return { success: true, schema: schema ?? null };
+    } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+});
+
+ipcMain.handle("get-toy-config", (_event, packageName: string) => {
+    const config = loadConfig();
+    return config.toyConfigs[packageName] ?? {};
+});
+
+ipcMain.handle(
+    "set-toy-config",
+    async (_event, packageName: string, values: Record<string, unknown>, schema: ToyControlSchema | null) => {
+        try {
+            const config = loadConfig();
+            const resolved = schema ? resolveToyConfig(schema, values) : { ...values };
+            config.toyConfigs[packageName] = resolved;
+            saveConfig(config);
+            await notifyToyConfigChange(packageName, resolved);
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err instanceof Error ? err.message : String(err) };
+        }
+    },
+);
 
 // --- App lifecycle ---
 

@@ -19,8 +19,38 @@ export interface AppConfig {
     foreheadPin: unknown;
     faceMesh: { pin: string; hide: string[] } | null;
     modelDirectory: string | null;
+    toyConfigs: Record<string, Record<string, unknown>>;
     debugOutput: boolean;
 }
+
+// Mirror of electron/toyControls.ts. Keep them in sync.
+export interface SliderControl {
+    readonly id: string;
+    readonly label: string;
+    readonly description?: string;
+    readonly type: "slider";
+    readonly min: number;
+    readonly max: number;
+    readonly step?: number;
+    readonly default: number;
+}
+export interface SelectControl {
+    readonly id: string;
+    readonly label: string;
+    readonly description?: string;
+    readonly type: "select";
+    readonly options: ReadonlyArray<{ readonly value: string | number; readonly label: string }>;
+    readonly default: string | number;
+}
+export interface ToggleControl {
+    readonly id: string;
+    readonly label: string;
+    readonly description?: string;
+    readonly type: "toggle";
+    readonly default: boolean;
+}
+export type ToyControl = SliderControl | SelectControl | ToggleControl;
+export type ToyControlSchema = readonly ToyControl[];
 
 export interface ToyInfo {
     name: string;
@@ -111,4 +141,24 @@ export async function browseModelDirectory(): Promise<IpcResult & { path?: strin
 
 export async function clearModelDirectory(): Promise<IpcResult> {
     return (await ipc.invoke("clear-model-directory")) as IpcResult;
+}
+
+export async function getToySchema(
+    packageName: string,
+): Promise<IpcResult & { schema?: ToyControlSchema | null }> {
+    return (await ipc.invoke("get-toy-schema", packageName)) as IpcResult & {
+        schema?: ToyControlSchema | null;
+    };
+}
+
+export async function getToyConfig(packageName: string): Promise<Record<string, unknown>> {
+    return (await ipc.invoke("get-toy-config", packageName)) as Record<string, unknown>;
+}
+
+export async function setToyConfig(
+    packageName: string,
+    values: Record<string, unknown>,
+    schema: ToyControlSchema | null,
+): Promise<IpcResult> {
+    return (await ipc.invoke("set-toy-config", packageName, values, schema)) as IpcResult;
 }
