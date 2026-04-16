@@ -53,6 +53,12 @@ export function getAvailableToys(): ToyDefinition[] {
             description: "Break and randomize your model's movements",
             guide: "Toggle it on and your model starts flailing around chaotically. Toggle it off to stop. No chat commands needed.",
         },
+        {
+            name: "Mesh Market",
+            package: "@sarxina/meshmarket",
+            description: "Let chat buy and sell your bodyparts.",
+            guide: "!meshmarket balance -> shows chatter's meshbucks\n!meshmarket buy <mesh> <#> -> buy vtuber mesh for # meshbucks\n!meshmarket show/hide - show or hide current ownership",
+        },
     ];
 }
 

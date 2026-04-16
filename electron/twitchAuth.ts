@@ -10,6 +10,7 @@ const SCOPES = [
     "chat:read",
     "chat:edit",
     "channel:read:redemptions",
+    "channel:manage:redemptions",
 ].join(" ");
 
 interface TwitchTokens {

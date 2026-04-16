@@ -17,6 +17,7 @@ export interface AppConfig {
     installedToys: string[];
     activeToys: string[];
     foreheadPin: unknown;
+    faceMesh: { pin: string; hide: string[] } | null;
     debugOutput: boolean;
 }
 
@@ -81,4 +82,16 @@ export async function requestForeheadPin(): Promise<IpcResult> {
 
 export async function clearForeheadPin(): Promise<IpcResult> {
     return (await ipc.invoke("clear-forehead-pin")) as IpcResult;
+}
+
+export async function hasFaceMesh(): Promise<boolean> {
+    return (await ipc.invoke("has-face-mesh")) as boolean;
+}
+
+export async function requestFaceMesh(): Promise<IpcResult & { count?: number }> {
+    return (await ipc.invoke("request-face-mesh")) as IpcResult & { count?: number };
+}
+
+export async function clearFaceMesh(): Promise<IpcResult> {
+    return (await ipc.invoke("clear-face-mesh")) as IpcResult;
 }
