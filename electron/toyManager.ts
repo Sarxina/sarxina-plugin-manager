@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { getToysDir, loadConfig, saveConfig } from "./configStore.js";
+import type { ToyControlSchema } from "./toyControls.js";
 
 // Electron's Node version for native module compilation
 const electronVersion = process.versions["electron"];
@@ -11,10 +12,14 @@ const electronVersion = process.versions["electron"];
 // and passed to startToy at runtime.
 interface ToyHandle {
     stop: () => Promise<void>;
+    /** Optional hot-reload hook. Called with the full resolved config bag
+     *  whenever the user changes a value for a running toy. */
+    onConfigChange?: (config: Record<string, unknown>) => void | Promise<void>;
 }
 
 interface ToyModule {
     startToy: (ctx: unknown) => ToyHandle | Promise<ToyHandle>;
+    getControlSchema?: (ctx: unknown) => ToyControlSchema | Promise<ToyControlSchema>;
 }
 
 // Registry of currently running toys
@@ -104,23 +109,7 @@ export async function startToy(packageName: string, ctx: unknown): Promise<void>
         return;
     }
 
-    const toysDir = getToysDir();
-    const toyDir = path.join(toysDir, "node_modules", packageName);
-
-    if (!existsSync(toyDir)) {
-        throw new Error(`${packageName} is not installed`);
-    }
-
-    // Read the toy's package.json to find its entry point
-    const toyPkg = JSON.parse(
-        readFileSync(path.join(toyDir, "package.json"), "utf-8")
-    ) as { main?: string };
-    const entryFile = toyPkg.main ?? "dist/index.js";
-    const entryPath = path.join(toyDir, entryFile);
-
-    // Dynamic import of the toy's main entry point.
-    // ESM loader requires file:// URLs, not raw drive-letter paths on Windows.
-    const toyModule = (await import(pathToFileURL(entryPath).href)) as ToyModule;
+    const toyModule = await loadToyModule(packageName);
 
     if (typeof toyModule.startToy !== "function") {
         throw new Error(`${packageName} does not export a startToy function`);
@@ -163,6 +152,48 @@ export async function stopToy(packageName: string): Promise<void> {
  */
 export function isToyRunning(packageName: string): boolean {
     return runningToys.has(packageName);
+}
+
+/**
+ * Fetch the toy's control schema by dynamically importing its module and
+ * invoking its optional `getControlSchema(ctx)` export. Returns `null` if
+ * the toy doesn't declare a schema.
+ */
+export async function getToyControlSchema(
+    packageName: string,
+    ctx: unknown,
+): Promise<ToyControlSchema | null> {
+    const toyModule = await loadToyModule(packageName);
+    if (typeof toyModule.getControlSchema !== "function") return null;
+    return await toyModule.getControlSchema(ctx);
+}
+
+/**
+ * Notify a running toy that its config changed. No-op when the toy isn't
+ * running or doesn't implement `onConfigChange`. Any hook error is surfaced
+ * to the caller so IPC can report it to the user.
+ */
+export async function notifyToyConfigChange(
+    packageName: string,
+    config: Record<string, unknown>,
+): Promise<void> {
+    const handle = runningToys.get(packageName);
+    if (!handle?.onConfigChange) return;
+    await handle.onConfigChange(config);
+}
+
+async function loadToyModule(packageName: string): Promise<ToyModule> {
+    const toysDir = getToysDir();
+    const toyDir = path.join(toysDir, "node_modules", packageName);
+    if (!existsSync(toyDir)) {
+        throw new Error(`${packageName} is not installed`);
+    }
+    const toyPkg = JSON.parse(
+        readFileSync(path.join(toyDir, "package.json"), "utf-8"),
+    ) as { main?: string };
+    const entryFile = toyPkg.main ?? "dist/index.js";
+    const entryPath = path.join(toyDir, entryFile);
+    return (await import(pathToFileURL(entryPath).href)) as ToyModule;
 }
 
 /**

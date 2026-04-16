@@ -36,6 +36,9 @@ export interface AppConfig {
     /** Absolute path to the active Live2D model's directory (containing the
      *  .model3.json). Used by toys that need to parse the .moc3 hierarchy. */
     modelDirectory: string | null;
+    /** Per-toy configuration bags, keyed by npm package name. Populated from
+     *  the toy's `getControlSchema()` + user choices. */
+    toyConfigs: Record<string, Record<string, unknown>>;
     debugOutput: boolean;
 }
 
@@ -51,6 +54,7 @@ const DEFAULT_CONFIG: AppConfig = {
     foreheadPin: null,
     faceMesh: null,
     modelDirectory: null,
+    toyConfigs: {},
     debugOutput: false,
 };
 
