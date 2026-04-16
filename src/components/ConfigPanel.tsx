@@ -6,6 +6,9 @@ import {
     twitchAuth,
     hasForeheadPin,
     clearForeheadPin,
+    hasFaceMesh,
+    requestFaceMesh,
+    clearFaceMesh,
     type AppConfig,
 } from "../hooks/useIpc";
 
@@ -14,6 +17,8 @@ export function ConfigPanel() {
     const [status, setStatus] = useState("");
     const [connected, setConnected] = useState(false);
     const [hasPin, setHasPin] = useState(false);
+    const [hasFace, setHasFace] = useState(false);
+    const [requestingFace, setRequestingFace] = useState(false);
     const [twitchUser, setTwitchUser] = useState<string | null>(null);
     const [authingTwitch, setAuthingTwitch] = useState(false);
 
@@ -23,6 +28,7 @@ export function ConfigPanel() {
             if (c.twitchChannelName) setTwitchUser(c.twitchChannelName);
         });
         hasForeheadPin().then(setHasPin);
+        hasFaceMesh().then(setHasFace);
     }, []);
 
     if (!config) return <div className="panel">Loading...</div>;
@@ -122,6 +128,45 @@ export function ConfigPanel() {
                         Reset Forehead Position
                     </button>
                 )}
+
+                <p className="config-hint" style={{ marginTop: "1rem" }}>
+                    {hasFace
+                        ? "Face meshes are set. Reset if you change models."
+                        : "Face meshes not set — required by EmojiHead."}
+                </p>
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <button
+                        onClick={async () => {
+                            setRequestingFace(true);
+                            setStatus("Check VTube Studio — select your face meshes there (click center mesh first).");
+                            const result = await requestFaceMesh();
+                            setRequestingFace(false);
+                            if (result.success) {
+                                setHasFace(true);
+                                setStatus(`Saved ${result.count} face meshes.`);
+                            } else {
+                                setStatus(`Face selection failed: ${result.error}`);
+                            }
+                            setTimeout(() => setStatus(""), 5000);
+                        }}
+                        disabled={requestingFace}
+                    >
+                        {requestingFace ? "Waiting for VTS..." : hasFace ? "Re-select Face Meshes" : "Select Face Meshes"}
+                    </button>
+                    {hasFace && (
+                        <button
+                            onClick={async () => {
+                                await clearFaceMesh();
+                                setHasFace(false);
+                                setStatus("Face meshes cleared");
+                                setTimeout(() => setStatus(""), 3000);
+                            }}
+                            className="secondary"
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="config-section">

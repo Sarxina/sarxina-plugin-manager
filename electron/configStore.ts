@@ -15,6 +15,13 @@ export interface ClickPinData {
     vertexWeight3: number;
 }
 
+export interface FaceMeshData {
+    /** Pin target — the "center" face mesh to anchor the emoji to. */
+    pin: string;
+    /** All meshes to hide while the emoji is active (includes pin). */
+    hide: string[];
+}
+
 export interface AppConfig {
     twitchClientId: string;
     twitchAccessToken: string;
@@ -25,6 +32,7 @@ export interface AppConfig {
     installedToys: string[];
     activeToys: string[];
     foreheadPin: ClickPinData | null;
+    faceMesh: FaceMeshData | null;
     debugOutput: boolean;
 }
 
@@ -38,6 +46,7 @@ const DEFAULT_CONFIG: AppConfig = {
     installedToys: [],
     activeToys: [],
     foreheadPin: null,
+    faceMesh: null,
     debugOutput: false,
 };
 

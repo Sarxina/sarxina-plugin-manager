@@ -364,6 +364,7 @@ button.secondary:hover {
     color: var(--color-white);
     line-height: 1.6;
     margin: 0;
+    white-space: pre-line;
 }
 
 .toy-card--active {

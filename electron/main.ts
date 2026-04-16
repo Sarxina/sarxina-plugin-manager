@@ -97,6 +97,9 @@ async function buildToyContext(): Promise<unknown> {
         chat: await ensureChatManager(config),
         vts: sharedVts,
         foreheadPin: config.foreheadPin ?? undefined,
+        faceMesh: config.faceMesh ?? undefined,
+        dataDir: app.getPath("userData"),
+        broadcasterLogin: config.twitchChannelName,
         debug: config.debugOutput,
     };
 }
@@ -171,6 +174,46 @@ ipcMain.handle("request-forehead-pin", async () => {
 ipcMain.handle("clear-forehead-pin", () => {
     const config = loadConfig();
     config.foreheadPin = null;
+    saveConfig(config);
+    return { success: true };
+});
+
+// Face mesh — used by EmojiHead to know which meshes to hide + where to pin.
+ipcMain.handle("has-face-mesh", () => {
+    const config = loadConfig();
+    return config.faceMesh !== null;
+});
+
+ipcMain.handle("request-face-mesh", async () => {
+    try {
+        if (!sharedVts) {
+            return { success: false, error: "Not connected to VTube Studio" };
+        }
+        const resp = await sharedVts.sendRequest("ArtMeshSelectionRequest", {
+            textOverride: "Select every face mesh you want hidden when EmojiHead is active. Click the center face mesh FIRST — that's where the emoji pins.",
+            helpOverride: "Click each face artmesh (skin, eyes, mouth, brows, etc). Don't include hair, ears, or accessories. The first mesh you click becomes the pin target.",
+            requestedArtMeshCount: 0,
+            activeArtMeshes: [],
+        });
+        const data = resp.data as { success: boolean; activeArtMeshes: string[] };
+        if (!data.success || data.activeArtMeshes.length === 0) {
+            return { success: false, error: "Selection cancelled or empty" };
+        }
+        const config = loadConfig();
+        config.faceMesh = {
+            pin: data.activeArtMeshes[0]!,
+            hide: data.activeArtMeshes,
+        };
+        saveConfig(config);
+        return { success: true, count: data.activeArtMeshes.length };
+    } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+});
+
+ipcMain.handle("clear-face-mesh", () => {
+    const config = loadConfig();
+    config.faceMesh = null;
     saveConfig(config);
     return { success: true };
 });
