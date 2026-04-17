@@ -20,7 +20,6 @@ export function ToyList() {
     const [pinPrompt, setPinPrompt] = useState(false);
     const [_pendingStart, setPendingStart] = useState<string | null>(null);
     const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
-    const [expandedSettings, setExpandedSettings] = useState<string | null>(null);
 
     const refresh = useCallback(async () => {
         const status = await getToyStatus();
@@ -149,13 +148,6 @@ export function ToyList() {
                                     </button>
                                 ) : (
                                     <>
-                                        <button
-                                            className="settings-btn"
-                                            onClick={() => setExpandedSettings(expandedSettings === toy.package ? null : toy.package)}
-                                            title="Configure"
-                                        >
-                                            ⚙
-                                        </button>
                                         <label className="toggle" title={toy.running ? "Stop" : "Start"}>
                                             <input
                                                 type="checkbox"
@@ -183,11 +175,7 @@ export function ToyList() {
                                     <img src={toy.demoGif} alt={`${toy.name} demo`} className="toy-demo-gif" />
                                 )}
                                 <p className="toy-guide">{toy.guide}</p>
-                            </div>
-                        )}
-                        {expandedSettings === toy.package && toy.installed && (
-                            <div className="toy-expanded">
-                                <ToyControlPanel packageName={toy.package} />
+                                {toy.installed && <ToyControlPanel packageName={toy.package} />}
                             </div>
                         )}
                     </div>
