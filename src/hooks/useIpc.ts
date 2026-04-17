@@ -33,6 +33,7 @@ export interface SliderControl {
     readonly max: number;
     readonly step?: number;
     readonly default: number;
+    readonly valueLabels?: Readonly<Record<number, string>>;
 }
 export interface SelectControl {
     readonly id: string;

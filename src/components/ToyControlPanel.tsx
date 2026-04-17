@@ -101,6 +101,7 @@ function renderInput(control: ToyControl, value: unknown, onChange: (v: unknown)
     switch (control.type) {
         case "slider": {
             const v = typeof value === "number" ? value : control.default;
+            const display = control.valueLabels?.[v] ?? String(v);
             return (
                 <div className="toy-control-slider">
                     <input
@@ -111,7 +112,7 @@ function renderInput(control: ToyControl, value: unknown, onChange: (v: unknown)
                         value={v}
                         onChange={(e) => onChange(Number(e.target.value))}
                     />
-                    <span className="toy-control-slider-value">{v}</span>
+                    <span className="toy-control-slider-value">{display}</span>
                 </div>
             );
         }

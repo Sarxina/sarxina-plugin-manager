@@ -448,27 +448,14 @@ button.secondary:hover {
     cursor: not-allowed;
 }
 
-/* Settings (gear) button */
-.settings-btn {
-    background: transparent !important;
-    border: none !important;
-    font-size: 1rem;
-    padding: 0.2rem;
-    cursor: pointer;
-    opacity: 0.5;
-    transition: opacity 0.15s;
-}
-
-.settings-btn:hover {
-    opacity: 1;
-    background: transparent !important;
-}
-
-/* Toy control panel */
+/* Toy control panel — rendered inside the existing ? expansion alongside the guide */
 .toy-controls {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid rgba(224, 185, 137, 0.1);
 }
 
 .toy-controls-empty {

@@ -24,6 +24,12 @@ export interface SliderControl extends ControlBase {
     readonly max: number;
     readonly step?: number;
     readonly default: number;
+    /**
+     * Optional per-stop labels. When provided, the value display next to the
+     * slider shows the mapped string instead of the raw number — useful for
+     * discrete sliders ("Level 1 — 37 parts", "Slow"/"Medium"/"Fast", …).
+     */
+    readonly valueLabels?: Readonly<Record<number, string>>;
 }
 
 export interface SelectControl extends ControlBase {
