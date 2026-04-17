@@ -121,65 +121,77 @@ export function ToyList() {
             )}
 
             <div className="toy-grid">
-                {toys.map((toy) => (
-                    <div key={toy.package} className={`toy-card ${toy.running ? "toy-card--active" : ""}`}>
-                        <div className="toy-card-row">
-                            <div className="toy-info">
-                                <div className="toy-title-row">
-                                    <h3>{toy.name}</h3>
-                                    <button
-                                        className="info-btn"
-                                        onClick={() => setExpandedInfo(expandedInfo === toy.package ? null : toy.package)}
-                                        title="More info"
-                                    >
-                                        ?
-                                    </button>
+                {toys.map((toy) => {
+                    const toggleExpanded = () =>
+                        setExpandedInfo(expandedInfo === toy.package ? null : toy.package);
+                    const stop = (e: React.MouseEvent | React.ChangeEvent) => e.stopPropagation();
+                    return (
+                        <div key={toy.package} className={`toy-card ${toy.running ? "toy-card--active" : ""}`}>
+                            <div
+                                className="toy-card-row toy-card-row--clickable"
+                                onClick={toggleExpanded}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        toggleExpanded();
+                                    }
+                                }}
+                            >
+                                <div className="toy-info">
+                                    <div className="toy-title-row">
+                                        <h3>{toy.name}</h3>
+                                        <span className="info-btn" aria-hidden="true" title="Click anywhere to expand">
+                                            ?
+                                        </span>
+                                    </div>
+                                    <p className="toy-description">{toy.description}</p>
                                 </div>
-                                <p className="toy-description">{toy.description}</p>
-                            </div>
-                            <div className="toy-actions">
-                                {!toy.installed ? (
-                                    <button
-                                        onClick={() => handleInstall(toy.package)}
-                                        disabled={loading === toy.package}
-                                        className="primary"
-                                    >
-                                        {loading === toy.package ? "Installing..." : "Install"}
-                                    </button>
-                                ) : (
-                                    <>
-                                        <label className="toggle" title={toy.running ? "Stop" : "Start"}>
-                                            <input
-                                                type="checkbox"
-                                                checked={toy.running}
-                                                onChange={() => handleToggle(toy)}
-                                                disabled={loading === toy.package}
-                                            />
-                                            <span className="toggle-slider" />
-                                        </label>
+                                <div className="toy-actions" onClick={stop}>
+                                    {!toy.installed ? (
                                         <button
-                                            className="uninstall-btn"
-                                            onClick={() => handleUninstall(toy.package)}
-                                            disabled={loading === toy.package || toy.running}
-                                            title="Uninstall"
+                                            onClick={(e) => { stop(e); handleInstall(toy.package); }}
+                                            disabled={loading === toy.package}
+                                            className="primary"
                                         >
-                                            🗑
+                                            {loading === toy.package ? "Installing..." : "Install"}
                                         </button>
-                                    </>
-                                )}
+                                    ) : (
+                                        <>
+                                            <label className="toggle" title={toy.running ? "Stop" : "Start"} onClick={stop}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={toy.running}
+                                                    onChange={(e) => { stop(e); handleToggle(toy); }}
+                                                    disabled={loading === toy.package}
+                                                />
+                                                <span className="toggle-slider" />
+                                            </label>
+                                            <button
+                                                className="uninstall-btn"
+                                                onClick={(e) => { stop(e); handleUninstall(toy.package); }}
+                                                disabled={loading === toy.package || toy.running}
+                                                title="Uninstall"
+                                            >
+                                                🗑
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
+                            {expandedInfo === toy.package && (
+                                <div className="toy-expanded">
+                                    {toy.demoGif && (
+                                        <img src={toy.demoGif} alt={`${toy.name} demo`} className="toy-demo-gif" />
+                                    )}
+                                    <p className="toy-guide">{toy.guide}</p>
+                                    {toy.installed && <ToyControlPanel packageName={toy.package} />}
+                                </div>
+                            )}
                         </div>
-                        {expandedInfo === toy.package && (
-                            <div className="toy-expanded">
-                                {toy.demoGif && (
-                                    <img src={toy.demoGif} alt={`${toy.name} demo`} className="toy-demo-gif" />
-                                )}
-                                <p className="toy-guide">{toy.guide}</p>
-                                {toy.installed && <ToyControlPanel packageName={toy.package} />}
-                            </div>
-                        )}
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
