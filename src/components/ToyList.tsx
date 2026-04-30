@@ -7,7 +7,10 @@ import {
     stopToy,
     hasForeheadPin,
     requestForeheadPin,
+    checkToyUpdates,
+    updateToy,
     type ToyInfo,
+    type ToyUpdateInfo,
 } from "../hooks/useIpc";
 import { ToyControlPanel } from "./ToyControlPanel";
 
@@ -20,15 +23,32 @@ export function ToyList() {
     const [pinPrompt, setPinPrompt] = useState(false);
     const [_pendingStart, setPendingStart] = useState<string | null>(null);
     const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
+    const [updates, setUpdates] = useState<Record<string, ToyUpdateInfo>>({});
 
     const refresh = useCallback(async () => {
         const status = await getToyStatus();
         setToys(status);
     }, []);
 
+    const refreshUpdates = useCallback(async () => {
+        const result = await checkToyUpdates();
+        setUpdates(result);
+    }, []);
+
     useEffect(() => {
         refresh();
-    }, [refresh]);
+        void refreshUpdates();
+    }, [refresh, refreshUpdates]);
+
+    const handleUpdate = async (pkg: string) => {
+        setLoading(pkg);
+        setError("");
+        const result = await updateToy(pkg);
+        if (!result.success) setError(result.error ?? "Update failed");
+        await refresh();
+        await refreshUpdates();
+        setLoading(null);
+    };
 
     const handleInstall = async (pkg: string) => {
         setLoading(pkg);
@@ -145,6 +165,16 @@ export function ToyList() {
                                         <span className="info-btn" aria-hidden="true" title="Click anywhere to expand">
                                             ?
                                         </span>
+                                        {updates[toy.package]?.available && (
+                                            <button
+                                                className="update-available toy-update-btn"
+                                                onClick={(e) => { stop(e); void handleUpdate(toy.package); }}
+                                                disabled={loading === toy.package}
+                                                title={`${updates[toy.package]?.installed} → ${updates[toy.package]?.latest}`}
+                                            >
+                                                {loading === toy.package ? "Updating..." : "Update available!"}
+                                            </button>
+                                        )}
                                     </div>
                                     <p className="toy-description">{toy.description}</p>
                                 </div>
