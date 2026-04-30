@@ -62,26 +62,59 @@ export function ToyControlPanel({ packageName }: Props) {
         return <div className="toy-controls-empty">This plugin has no settings.</div>;
     }
 
-    // Filter out controls whose showWhen condition doesn't match the current
-    // value of the gating field. The hidden controls keep their persisted
-    // value but aren't editable (and toys can ignore them when irrelevant).
-    const visibleSchema = schema.filter((control) => {
+    // Filter and group: any control with a `showWhen` is treated as a child
+    // of its gating control. Visible children render to the right of their
+    // parent in a 2-column layout; standalone controls span the full width.
+    const visibleControls = schema.filter((control) => {
         if (!control.showWhen) return true;
         const gate = values[control.showWhen.id];
         const fallback = schema.find((c) => c.id === control.showWhen!.id)?.default;
         return (gate ?? fallback) === control.showWhen.equals;
     });
 
+    type Group = { parent: ToyControl; children: ToyControl[] };
+    const groups: Group[] = [];
+    for (const control of visibleControls) {
+        if (control.showWhen) {
+            const parent = groups.find((g) => g.parent.id === control.showWhen!.id);
+            if (parent) {
+                parent.children.push(control);
+                continue;
+            }
+        }
+        groups.push({ parent: control, children: [] });
+    }
+
     return (
         <div className="toy-controls">
-            {visibleSchema.map((control) => (
-                <ControlField
-                    key={control.id}
-                    control={control}
-                    value={values[control.id]}
-                    onChange={(v) => void handleChange(control, v)}
-                />
-            ))}
+            {groups.map((group) =>
+                group.children.length === 0 ? (
+                    <ControlField
+                        key={group.parent.id}
+                        control={group.parent}
+                        value={values[group.parent.id]}
+                        onChange={(v) => void handleChange(group.parent, v)}
+                    />
+                ) : (
+                    <div key={group.parent.id} className="toy-control-group">
+                        <ControlField
+                            control={group.parent}
+                            value={values[group.parent.id]}
+                            onChange={(v) => void handleChange(group.parent, v)}
+                        />
+                        <div className="toy-control-group-children">
+                            {group.children.map((child) => (
+                                <ControlField
+                                    key={child.id}
+                                    control={child}
+                                    value={values[child.id]}
+                                    onChange={(v) => void handleChange(child, v)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                ),
+            )}
             {status && <div className="toy-controls-status">{status}</div>}
         </div>
     );
@@ -142,6 +175,25 @@ function renderInput(control: ToyControl, value: unknown, onChange: (v: unknown)
                         </option>
                     ))}
                 </select>
+            );
+        }
+        case "radio": {
+            const v = value ?? control.default;
+            return (
+                <div className="toy-control-radio">
+                    {control.options.map((opt) => (
+                        <label key={String(opt.value)} className="toy-control-radio-option">
+                            <input
+                                type="radio"
+                                name={control.id}
+                                value={String(opt.value)}
+                                checked={String(v) === String(opt.value)}
+                                onChange={() => onChange(opt.value)}
+                            />
+                            <span>{opt.label}</span>
+                        </label>
+                    ))}
+                </div>
             );
         }
         case "toggle": {
