@@ -2,6 +2,8 @@
 
 interface IpcRenderer {
     invoke(channel: string, ...args: unknown[]): Promise<unknown>;
+    on(channel: string, listener: (...args: unknown[]) => void): void;
+    off(channel: string, listener: (...args: unknown[]) => void): void;
 }
 
 // The preload script exposes ipcRenderer on window
@@ -104,6 +106,19 @@ export async function checkForUpdate(): Promise<UpdateInfo> {
 
 export async function openExternal(url: string): Promise<void> {
     await ipc.invoke("open-external", url);
+}
+
+export async function downloadUpdate(): Promise<IpcResult & { path?: string }> {
+    return (await ipc.invoke("download-update")) as IpcResult & { path?: string };
+}
+
+export function onUpdateProgress(handler: (percent: number) => void): () => void {
+    const wrapped = (...args: unknown[]) => {
+        const percent = args[1];
+        if (typeof percent === "number") handler(percent);
+    };
+    ipc.on("update-download-progress", wrapped);
+    return () => ipc.off("update-download-progress", wrapped);
 }
 
 export async function twitchAuth(): Promise<IpcResult & { displayName?: string }> {

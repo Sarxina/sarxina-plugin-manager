@@ -221,6 +221,71 @@ ipcMain.handle("open-external", async (_event, url: string) => {
     await shell.openExternal(url);
 });
 
+// Downloads the Windows .exe asset from the latest GitHub release into the
+// user's Downloads folder, streaming progress back to the renderer so the
+// button can show a percentage. When done, opens File Explorer with the new
+// .exe highlighted so the user can run it manually (we keep portable, so
+// the app can't replace itself in place).
+ipcMain.handle("download-update", async () => {
+    try {
+        const releaseResp = await fetch(
+            "https://api.github.com/repos/Sarxina/sarxina-plugin-manager/releases/latest",
+            {
+                headers: {
+                    "User-Agent": "sarxina-plugin-manager",
+                    Accept: "application/vnd.github+json",
+                },
+            },
+        );
+        if (!releaseResp.ok) {
+            return { success: false, error: `GitHub API ${releaseResp.status}` };
+        }
+        const release = (await releaseResp.json()) as {
+            assets?: Array<{ name: string; browser_download_url: string; size: number }>;
+        };
+        const asset = release.assets?.find((a) => /Windows.*\.exe$/i.test(a.name));
+        if (!asset) {
+            return { success: false, error: "No Windows .exe asset on the latest release." };
+        }
+
+        const downloadsDir = app.getPath("downloads");
+        const targetPath = path.join(downloadsDir, asset.name);
+
+        const dlResp = await fetch(asset.browser_download_url, {
+            headers: { "User-Agent": "sarxina-plugin-manager" },
+            redirect: "follow",
+        });
+        if (!dlResp.ok || !dlResp.body) {
+            return { success: false, error: `Download failed: ${dlResp.status}` };
+        }
+
+        const total = asset.size;
+        let received = 0;
+        let lastPercent = -1;
+        const fileStream = (await import("node:fs")).createWriteStream(targetPath);
+        const reader = dlResp.body.getReader();
+        const sender = win?.webContents;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            fileStream.write(Buffer.from(value));
+            received += value.length;
+            const percent = total > 0 ? Math.floor((received / total) * 100) : 0;
+            if (percent !== lastPercent) {
+                lastPercent = percent;
+                sender?.send("update-download-progress", percent);
+            }
+        }
+        fileStream.end();
+        await new Promise<void>((resolve) => fileStream.on("close", () => resolve()));
+
+        shell.showItemInFolder(targetPath);
+        return { success: true, path: targetPath };
+    } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+});
+
 ipcMain.handle("get-config", () => {
     return loadConfig();
 });
