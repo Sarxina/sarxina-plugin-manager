@@ -48,10 +48,25 @@
     background: var(--color-peach);
 }
 
-/* Toy-card update button is smaller — slots into the title row alongside ? */
-.toy-update-btn {
-    padding: 0.15rem 0.5rem;
-    font-size: 0.65rem;
+/* Small gold up-arrow shown next to the toy's start/stop toggle when an
+ * update is available on npm. */
+.toy-update-arrow {
+    background: transparent;
+    border: none;
+    padding: 0 0.3rem;
+    color: var(--color-gold);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.toy-update-arrow:hover {
+    color: var(--color-peach);
+}
+
+.toy-update-arrow:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .tab-bar {

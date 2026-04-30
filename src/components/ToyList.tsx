@@ -165,16 +165,6 @@ export function ToyList() {
                                         <span className="info-btn" aria-hidden="true" title="Click anywhere to expand">
                                             ?
                                         </span>
-                                        {updates[toy.package]?.available && (
-                                            <button
-                                                className="update-available toy-update-btn"
-                                                onClick={(e) => { stop(e); void handleUpdate(toy.package); }}
-                                                disabled={loading === toy.package}
-                                                title={`${updates[toy.package]?.installed} → ${updates[toy.package]?.latest}`}
-                                            >
-                                                {loading === toy.package ? "Updating..." : "Update available!"}
-                                            </button>
-                                        )}
                                     </div>
                                     <p className="toy-description">{toy.description}</p>
                                 </div>
@@ -189,6 +179,16 @@ export function ToyList() {
                                         </button>
                                     ) : (
                                         <>
+                                            {updates[toy.package]?.available && (
+                                                <button
+                                                    className="toy-update-arrow"
+                                                    onClick={(e) => { stop(e); void handleUpdate(toy.package); }}
+                                                    disabled={loading === toy.package}
+                                                    title={`Update ${updates[toy.package]?.installed} → ${updates[toy.package]?.latest}`}
+                                                >
+                                                    ↑
+                                                </button>
+                                            )}
                                             <label className="toggle" title={toy.running ? "Stop" : "Start"} onClick={stop}>
                                                 <input
                                                     type="checkbox"
