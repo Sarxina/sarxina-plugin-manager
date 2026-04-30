@@ -48,20 +48,27 @@
     background: var(--color-peach);
 }
 
-/* Small gold up-arrow shown next to the toy's start/stop toggle when an
- * update is available on npm. */
+/* Small gold bubble with a navy up-arrow shown next to the toy's
+ * start/stop toggle when an update is available on npm. */
 .toy-update-arrow {
-    background: transparent;
+    background: var(--color-gold);
+    color: var(--color-navy);
     border: none;
-    padding: 0 0.3rem;
-    color: var(--color-gold);
-    font-size: 1.1rem;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
     line-height: 1;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .toy-update-arrow:hover {
-    color: var(--color-peach);
+    background: var(--color-peach);
 }
 
 .toy-update-arrow:disabled {
