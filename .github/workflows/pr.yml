@@ -1,0 +1,9 @@
+name: PR
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, labeled, unlabeled]
+
+jobs:
+  pr-checks:
+    uses: Sarxina/sarxina-tools/.github/workflows/pr-checks.yml@main
