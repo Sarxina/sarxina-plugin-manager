@@ -14,6 +14,9 @@ import {
     stopAllToys,
     getToyControlSchema,
     notifyToyConfigChange,
+    getInstalledToyVersion,
+    getLatestToyVersion,
+    updateToy,
 } from "./toyManager.js";
 import { authenticateWithTwitch, getTwitchUser } from "./twitchAuth.js";
 import { detectModelDirectory, isValidModelDirectory } from "./modelDetector.js";
@@ -455,6 +458,29 @@ ipcMain.handle("install-toy", async (_event, packageName: string) => {
 ipcMain.handle("uninstall-toy", async (_event, packageName: string) => {
     try {
         await uninstallToy(packageName);
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+    }
+});
+
+ipcMain.handle("check-toy-updates", async () => {
+    const config = loadConfig();
+    const results: Record<string, { installed: string | null; latest: string | null; available: boolean }> = {};
+    await Promise.all(
+        config.installedToys.map(async (pkg) => {
+            const installed = getInstalledToyVersion(pkg);
+            const latest = await getLatestToyVersion(pkg);
+            const available = !!installed && !!latest && isNewerVersion(latest, installed);
+            results[pkg] = { installed, latest, available };
+        }),
+    );
+    return results;
+});
+
+ipcMain.handle("update-toy", async (_event, packageName: string) => {
+    try {
+        await updateToy(packageName);
         return { success: true };
     } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };

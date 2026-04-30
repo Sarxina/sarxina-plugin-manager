@@ -48,6 +48,12 @@
     background: var(--color-peach);
 }
 
+/* Toy-card update button is smaller — slots into the title row alongside ? */
+.toy-update-btn {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.65rem;
+}
+
 .tab-bar {
     display: flex;
     gap: 0;

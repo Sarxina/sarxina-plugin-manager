@@ -68,6 +68,53 @@ export function getAvailableToys(): ToyDefinition[] {
 }
 
 /**
+ * Read the installed version of a toy from its package.json. Returns null
+ * if the toy isn't installed.
+ */
+export function getInstalledToyVersion(packageName: string): string | null {
+    const toysDir = getToysDir();
+    const pkgPath = path.join(toysDir, "node_modules", packageName, "package.json");
+    if (!existsSync(pkgPath)) return null;
+    try {
+        const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { version?: string };
+        return pkg.version ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Fetch the latest version of a toy package from the npm registry. Returns
+ * null on any error so callers can treat it as "no update available."
+ */
+export async function getLatestToyVersion(packageName: string): Promise<string | null> {
+    try {
+        const resp = await fetch(`https://registry.npmjs.org/${packageName}/latest`, {
+            headers: { Accept: "application/json" },
+        });
+        if (!resp.ok) return null;
+        const data = (await resp.json()) as { version?: string };
+        return data.version ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Update an installed toy to the latest version on npm. If the toy is
+ * currently running, it is stopped first. Caller is expected to restart it
+ * afterwards (so config is re-applied with whatever the new version expects).
+ */
+export async function updateToy(packageName: string): Promise<void> {
+    const wasRunning = runningToys.has(packageName);
+    if (wasRunning) {
+        await stopToy(packageName);
+    }
+    const toysDir = getToysDir();
+    await runNpm(`install ${packageName}@latest`, toysDir);
+}
+
+/**
  * Install a toy from npm into the managed toys directory.
  */
 export async function installToy(packageName: string): Promise<void> {

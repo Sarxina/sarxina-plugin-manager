@@ -112,6 +112,20 @@ export async function downloadUpdate(): Promise<IpcResult & { path?: string }> {
     return (await ipc.invoke("download-update")) as IpcResult & { path?: string };
 }
 
+export interface ToyUpdateInfo {
+    installed: string | null;
+    latest: string | null;
+    available: boolean;
+}
+
+export async function checkToyUpdates(): Promise<Record<string, ToyUpdateInfo>> {
+    return (await ipc.invoke("check-toy-updates")) as Record<string, ToyUpdateInfo>;
+}
+
+export async function updateToy(packageName: string): Promise<IpcResult> {
+    return (await ipc.invoke("update-toy", packageName)) as IpcResult;
+}
+
 export function onUpdateProgress(handler: (percent: number) => void): () => void {
     const wrapped = (...args: unknown[]) => {
         const percent = args[1];
