@@ -62,9 +62,19 @@ export function ToyControlPanel({ packageName }: Props) {
         return <div className="toy-controls-empty">This plugin has no settings.</div>;
     }
 
+    // Filter out controls whose showWhen condition doesn't match the current
+    // value of the gating field. The hidden controls keep their persisted
+    // value but aren't editable (and toys can ignore them when irrelevant).
+    const visibleSchema = schema.filter((control) => {
+        if (!control.showWhen) return true;
+        const gate = values[control.showWhen.id];
+        const fallback = schema.find((c) => c.id === control.showWhen!.id)?.default;
+        return (gate ?? fallback) === control.showWhen.equals;
+    });
+
     return (
         <div className="toy-controls">
-            {schema.map((control) => (
+            {visibleSchema.map((control) => (
                 <ControlField
                     key={control.id}
                     control={control}
@@ -141,6 +151,34 @@ function renderInput(control: ToyControl, value: unknown, onChange: (v: unknown)
                     type="checkbox"
                     checked={v}
                     onChange={(e) => onChange(e.target.checked)}
+                />
+            );
+        }
+        case "numberInput": {
+            const v = typeof value === "number" ? value : control.default;
+            return (
+                <input
+                    type="number"
+                    value={v}
+                    min={control.min}
+                    max={control.max}
+                    step={control.step ?? 1}
+                    placeholder={control.placeholder}
+                    onChange={(e) => {
+                        const parsed = Number(e.target.value);
+                        if (Number.isFinite(parsed)) onChange(parsed);
+                    }}
+                />
+            );
+        }
+        case "textInput": {
+            const v = typeof value === "string" ? value : control.default;
+            return (
+                <input
+                    type="text"
+                    value={v}
+                    placeholder={control.placeholder}
+                    onChange={(e) => onChange(e.target.value)}
                 />
             );
         }

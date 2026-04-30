@@ -16,6 +16,17 @@ export interface ControlBase {
     readonly id: string;
     readonly label: string;
     readonly description?: string;
+    /**
+     * Optional conditional visibility. When set, the control is only shown
+     * (and its value only applied) when another control's current value
+     * equals `showWhen.equals`. Used for option-dependent fields — e.g. a
+     * "reward cost" field that only appears when the user picks "redeem"
+     * from a "trigger type" select.
+     */
+    readonly showWhen?: {
+        readonly id: string;
+        readonly equals: string | number | boolean;
+    };
 }
 
 export interface SliderControl extends ControlBase {
@@ -43,7 +54,28 @@ export interface ToggleControl extends ControlBase {
     readonly default: boolean;
 }
 
-export type ToyControl = SliderControl | SelectControl | ToggleControl;
+export interface NumberInputControl extends ControlBase {
+    readonly type: "numberInput";
+    readonly default: number;
+    readonly min?: number;
+    readonly max?: number;
+    readonly step?: number;
+    /** Optional placeholder shown when the field is empty. */
+    readonly placeholder?: string;
+}
+
+export interface TextInputControl extends ControlBase {
+    readonly type: "textInput";
+    readonly default: string;
+    readonly placeholder?: string;
+}
+
+export type ToyControl =
+    | SliderControl
+    | SelectControl
+    | ToggleControl
+    | NumberInputControl
+    | TextInputControl;
 export type ToyControlSchema = readonly ToyControl[];
 
 /**
