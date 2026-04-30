@@ -92,6 +92,20 @@ interface IpcResult {
     error?: string;
 }
 
+export interface UpdateInfo {
+    available: boolean;
+    latestVersion?: string;
+    url?: string;
+}
+
+export async function checkForUpdate(): Promise<UpdateInfo> {
+    return (await ipc.invoke("check-for-update")) as UpdateInfo;
+}
+
+export async function openExternal(url: string): Promise<void> {
+    await ipc.invoke("open-external", url);
+}
+
 export async function twitchAuth(): Promise<IpcResult & { displayName?: string }> {
     return (await ipc.invoke("twitch-auth")) as IpcResult & { displayName?: string };
 }

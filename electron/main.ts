@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -175,6 +175,52 @@ ipcMain.handle("twitch-auth", async () => {
 });
 
 // Config
+// Compares "0.4.1" vs "0.4.0"-style strings. Returns true if `latest` is
+// strictly greater. Tolerant of extra parts (any beyond the third are
+// ignored) and missing parts (treated as 0).
+function isNewerVersion(latest: string, current: string): boolean {
+    const parse = (v: string) => v.replace(/^v/, "").split(".").map((n) => parseInt(n, 10) || 0);
+    const a = parse(latest);
+    const b = parse(current);
+    for (let i = 0; i < 3; i++) {
+        const la = a[i] ?? 0;
+        const lb = b[i] ?? 0;
+        if (la > lb) return true;
+        if (la < lb) return false;
+    }
+    return false;
+}
+
+ipcMain.handle("check-for-update", async () => {
+    try {
+        const resp = await fetch(
+            "https://api.github.com/repos/Sarxina/sarxina-plugin-manager/releases/latest",
+            {
+                headers: {
+                    "User-Agent": "sarxina-plugin-manager",
+                    Accept: "application/vnd.github+json",
+                },
+            },
+        );
+        if (!resp.ok) return { available: false };
+        const data = (await resp.json()) as { tag_name?: string; html_url?: string };
+        const latest = data.tag_name?.replace(/^v/, "") ?? "";
+        const current = app.getVersion();
+        if (!latest || !isNewerVersion(latest, current)) return { available: false };
+        return {
+            available: true,
+            latestVersion: latest,
+            url: data.html_url ?? "https://github.com/Sarxina/sarxina-plugin-manager/releases/latest",
+        };
+    } catch {
+        return { available: false };
+    }
+});
+
+ipcMain.handle("open-external", async (_event, url: string) => {
+    await shell.openExternal(url);
+});
+
 ipcMain.handle("get-config", () => {
     return loadConfig();
 });
