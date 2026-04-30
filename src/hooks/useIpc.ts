@@ -24,10 +24,16 @@ export interface AppConfig {
 }
 
 // Mirror of electron/toyControls.ts. Keep them in sync.
-export interface SliderControl {
+export interface ControlBase {
     readonly id: string;
     readonly label: string;
     readonly description?: string;
+    readonly showWhen?: {
+        readonly id: string;
+        readonly equals: string | number | boolean;
+    };
+}
+export interface SliderControl extends ControlBase {
     readonly type: "slider";
     readonly min: number;
     readonly max: number;
@@ -35,22 +41,34 @@ export interface SliderControl {
     readonly default: number;
     readonly valueLabels?: Readonly<Record<number, string>>;
 }
-export interface SelectControl {
-    readonly id: string;
-    readonly label: string;
-    readonly description?: string;
+export interface SelectControl extends ControlBase {
     readonly type: "select";
     readonly options: ReadonlyArray<{ readonly value: string | number; readonly label: string }>;
     readonly default: string | number;
 }
-export interface ToggleControl {
-    readonly id: string;
-    readonly label: string;
-    readonly description?: string;
+export interface ToggleControl extends ControlBase {
     readonly type: "toggle";
     readonly default: boolean;
 }
-export type ToyControl = SliderControl | SelectControl | ToggleControl;
+export interface NumberInputControl extends ControlBase {
+    readonly type: "numberInput";
+    readonly default: number;
+    readonly min?: number;
+    readonly max?: number;
+    readonly step?: number;
+    readonly placeholder?: string;
+}
+export interface TextInputControl extends ControlBase {
+    readonly type: "textInput";
+    readonly default: string;
+    readonly placeholder?: string;
+}
+export type ToyControl =
+    | SliderControl
+    | SelectControl
+    | ToggleControl
+    | NumberInputControl
+    | TextInputControl;
 export type ToyControlSchema = readonly ToyControl[];
 
 export interface ToyInfo {
