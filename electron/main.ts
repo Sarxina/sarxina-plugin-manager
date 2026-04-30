@@ -36,7 +36,9 @@ process.env["VITE_PUBLIC"] = VITE_DEV_SERVER_URL
 let win: BrowserWindow | null;
 
 // Shared connections — created when user clicks Connect
-let sharedChat: unknown = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let sharedChat: any = null;
+let sharedActionRegistry: unknown = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let sharedVts: any = null;
 
@@ -121,15 +123,23 @@ async function ensureChatManager(config: AppConfig): Promise<unknown> {
     process.env["TWITCH_REFRESH_TOKEN"] = config.twitchRefreshToken;
     process.env["TWITCH_BROADCASTER_ID"] = config.twitchBroadcasterId;
     const tools = await import("@sarxina/sarxina-tools");
-    sharedChat = new tools.TwitchChatManager();
+    sharedChat = new tools.TwitchManager();
+    // Build the action registry around the shared chat manager so toys can
+    // register Actions via `ctx.actionRegistry` instead of consuming events
+    // directly. Each toy's Actions are independent — registry routes to all.
+    sharedActionRegistry = new tools.ActionRegistry([sharedChat]);
     return sharedChat;
 }
 
 async function buildToyContext(packageName?: string): Promise<unknown> {
     const config = loadConfig();
     const toyConfig = packageName ? (config.toyConfigs[packageName] ?? {}) : {};
+    // ensureChatManager populates sharedActionRegistry as a side effect when
+    // chat is available. If Twitch isn't configured, both stay null.
+    const chat = await ensureChatManager(config);
     return {
-        chat: await ensureChatManager(config),
+        chat,
+        actionRegistry: chat ? sharedActionRegistry : null,
         vts: sharedVts,
         foreheadPin: config.foreheadPin ?? undefined,
         faceMesh: config.faceMesh ?? undefined,
