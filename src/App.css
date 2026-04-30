@@ -518,6 +518,47 @@ button.secondary:hover {
     opacity: 0.8;
 }
 
+/* Radio buttons render in a row below the title. */
+.toy-control-radio {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+}
+
+.toy-control-radio-option {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* When a control has dependents (via showWhen), the parent and its
+ * children render side by side: parent on the left, children stacked on
+ * the right. Falls back to a single column on narrow widths. */
+.toy-control-group {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1.2rem;
+    align-items: start;
+}
+
+.toy-control-group > .toy-control {
+    /* parent column */
+    margin: 0;
+}
+
+.toy-control-group-children {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+@media (max-width: 640px) {
+    .toy-control-group {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Pin prompt overlay */
 .pin-prompt {
     position: fixed;

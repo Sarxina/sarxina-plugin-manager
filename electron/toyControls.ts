@@ -49,6 +49,12 @@ export interface SelectControl extends ControlBase {
     readonly default: string | number;
 }
 
+export interface RadioControl extends ControlBase {
+    readonly type: "radio";
+    readonly options: ReadonlyArray<{ readonly value: string | number; readonly label: string }>;
+    readonly default: string | number;
+}
+
 export interface ToggleControl extends ControlBase {
     readonly type: "toggle";
     readonly default: boolean;
@@ -73,6 +79,7 @@ export interface TextInputControl extends ControlBase {
 export type ToyControl =
     | SliderControl
     | SelectControl
+    | RadioControl
     | ToggleControl
     | NumberInputControl
     | TextInputControl;
