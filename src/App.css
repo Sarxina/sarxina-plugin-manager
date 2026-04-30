@@ -12,8 +12,15 @@
     border-bottom: 2px solid var(--color-gold);
 }
 
-.app-header h1 {
+.app-title-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     margin: 0 0 0.8rem;
+}
+
+.app-header h1 {
+    margin: 0;
     font-size: 1.4rem;
     font-weight: 300;
     letter-spacing: 0.12em;
@@ -22,6 +29,23 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.update-available {
+    padding: 0.3rem 0.8rem;
+    background: var(--color-gold);
+    border: none;
+    border-radius: 3px;
+    color: var(--color-navy);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.update-available:hover {
+    background: var(--color-peach);
 }
 
 .tab-bar {
